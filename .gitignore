@@ -11,8 +11,4 @@ logs
 .env
 .env.*
 !.env.example
-
-# amplify
-.amplify
-amplify_outputs*
-amplifyconfiguration*
+.amplify-hosting
