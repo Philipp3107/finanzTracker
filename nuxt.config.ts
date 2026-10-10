@@ -1,18 +1,24 @@
 import process from 'node:process'
+import tailwindcss from '@tailwindcss/vite'
 
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
+  css: ['~/assets/css/tailwind.css'],
+  vite: {
+    plugins: [tailwindcss()],
+  },
   runtimeConfig: {
     public: {
       cognitoAuthority: process.env.NUXT_PUBLIC_COGNITO_AUTHORITY || '',
       cognitoClientId: process.env.NUXT_PUBLIC_COGNITO_CLIENT_ID || '',
       cognitoDomain: process.env.NUXT_PUBLIC_COGNITO_DOMAIN || '',
+      accountApiUrl: process.env.NUXT_PUBLIC_ACCOUNT_API_URL || '',
     },
   },
   app: {
     head: {
-      htmlAttrs: { lang: 'de' },
+      htmlAttrs: { lang: 'de', class: 'scheme-dark bg-background font-sans text-foreground tracking-normal selection:bg-accent selection:text-accent-ink' },
       title: 'Finanz Tracker',
       meta: [
         { name: 'viewport', content: 'width=device-width, initial-scale=1, viewport-fit=cover' },

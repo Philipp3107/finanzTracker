@@ -4,10 +4,12 @@ frontend:
     preBuild:
       commands:
         - nvm use 22
-        - npm ci
+        - npm install --prefix "$HOME/.local/share/finanztracker-corepack" corepack@0.34.0
+        - node "$HOME/.local/share/finanztracker-corepack/node_modules/corepack/dist/corepack.js" enable --install-directory "$(dirname "$(command -v node)")" yarn
+        - yarn install --immutable
     build:
       commands:
-        - NITRO_PRESET=aws_amplify npm run build
+        - NITRO_PRESET=aws_amplify yarn build
   artifacts:
     baseDirectory: .amplify-hosting
     files:

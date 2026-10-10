@@ -30,19 +30,26 @@ configuration into the app; environment changes require a new build.
 ## Development
 
 ```sh
-npm ci
+npm install --prefix "$HOME/.local/share/finanztracker-corepack" corepack@0.34.0
+node "$HOME/.local/share/finanztracker-corepack/node_modules/corepack/dist/corepack.js" enable --install-directory "$(dirname "$(command -v node)")" yarn
+yarn install --immutable
 NUXT_PUBLIC_COGNITO_AUTHORITY=https://cognito-idp.eu-central-1.amazonaws.com/eu-central-1_aBgyXUCzm \
 NUXT_PUBLIC_COGNITO_CLIENT_ID=60v9enl4rfeea01d3idp5fo1b6 \
 NUXT_PUBLIC_COGNITO_DOMAIN=https://finanztracker-eu-central-1-abgyxuczm.auth.eu-central-1.amazoncognito.com \
-npm run dev -- --port 3000
+yarn dev --port 3000 --host 127.0.0.1
 ```
 
 Open http://localhost:3000/. Use this exact origin, not `127.0.0.1` or a different
 port, because Cognito explicitly allows only the configured callback URLs.
 
 ```sh
-NITRO_PRESET=aws_amplify npm run build
+yarn typecheck
+NITRO_PRESET=aws_amplify yarn build
 ```
+
+Yarn 4.9.2 is pinned through `packageManager`. The project uses the standard
+`node_modules` linker. Commit `yarn.lock` with dependency changes; do not create
+an npm lockfile. Use `yarn add` and `yarn remove` to manage dependencies.
 
 The production artifact is `.amplify-hosting`. Deploy frontend changes through
 the existing Amplify Git workflow.
@@ -82,6 +89,6 @@ An installed iOS PWA can open the login in a different browser context. Verify
 that the callback returns to a context with the original sessionStorage state;
 otherwise login must fail closed rather than accepting an unverified callback.
 
-`npm audit` currently reports high/critical findings in the existing Nuxt
-dependency tree. Resolve and retest these before a production release; do not
-use `npm audit fix --force` to downgrade the application blindly.
+The previous npm installation reported high/critical findings in the Nuxt
+dependency tree. Check the current Yarn lockfile with `yarn npm audit --all --recursive`
+before a production release and review dependency updates explicitly.

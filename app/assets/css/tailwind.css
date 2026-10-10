@@ -1,0 +1,21 @@
+@import "tailwindcss";
+@source "../../../nuxt.config.ts";
+
+@theme {
+  --font-sans: "Manrope", sans-serif;
+  --color-background: #111413;
+  --color-surface: #1c2220;
+  --color-foreground: #f2f5f3;
+  --color-muted: #a0ada6;
+  --color-line: #2c3530;
+  --color-accent: #b1f2cc;
+  --color-accent-hover: #c9f9dd;
+  --color-accent-ink: #14271c;
+  --color-error: #ff9eaa;
+  --animate-enter: enter 400ms ease-out both;
+
+  @keyframes enter {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+}

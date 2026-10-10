@@ -26,7 +26,7 @@ export function useAuth() {
         client_id: config.cognitoClientId,
         redirect_uri: `${window.location.origin}/`,
         response_type: 'code',
-        scope: 'openid email profile',
+        scope: 'openid email profile finanztracker/account.initialize',
         automaticSilentRenew: false,
         loadUserInfo: false,
         stateStore: new WebStorageStateStore({ store: window.sessionStorage }),
