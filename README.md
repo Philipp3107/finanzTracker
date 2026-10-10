@@ -57,8 +57,10 @@ the existing Amplify Git workflow.
 ## Session and Security
 
 Tokens live only in browser memory, never localStorage, sessionStorage or Nuxt's
-SSR payload. Only the short-lived OAuth transaction (including the PKCE verifier)
-is stored in sessionStorage so it survives the login redirect. The callback
+SSR payload. The short-lived OAuth transaction (including the PKCE verifier)
+and an optional unsubmitted shortcut draft are stored in sessionStorage so they
+survive the login redirect. Shortcut drafts expire after ten minutes and are
+removed when the booking form opens. The callback
 removes OAuth parameters from the address bar. Reloading the page requires a new
 login redirect, which may reuse Cognito's existing browser session. Access tokens
 expire after 15 minutes; this initial version does not renew them automatically.
@@ -70,10 +72,12 @@ TOTP MFA is enabled but optional in the pool. This version does not provide MFA
 enrollment or enforce a second factor. Before using real financial data, decide
 on and implement the MFA enrollment policy.
 
-This is the login foundation only. There is no booking API or database access
-from the frontend. Future APIs must validate access tokens and derive the owner
-exclusively from the verified `sub`, never a client-supplied user ID. The PWA must
-not cache authentication callbacks or financial API responses.
+The dashboard uses the scope-protected finance API for bookings, budgets,
+recurring payment confirmation and settings. `NUXT_PUBLIC_ACCOUNT_API_URL`
+must be configured, and users must log in again to obtain the new
+`finanztracker/finance` scope. See `../backend/FINANCE.md` for the data model,
+calculation rules, iPhone shortcut URL and known boundaries. The PWA must not
+cache authentication callbacks or financial API responses.
 
 ## Verification
 

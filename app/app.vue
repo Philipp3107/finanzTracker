@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ArrowRight, LoaderCircle, LogOut, Wallet } from '@lucide/vue'
 
-import MainContent from './components/MainContent.vue'
+import FinanceDashboard from './components/FinanceDashboard.vue'
 
 import '@fontsource/manrope/400.css'
 import '@fontsource/manrope/500.css'
@@ -36,7 +36,7 @@ const { accountStatus, accountError, initializeAccount } = useAccountInitializat
         <p class="text-muted">Die Anmeldung ist noch nicht verf&uuml;gbar.</p>
       </template>
       <template v-else-if="user">
-        <MainContent v-if="accountStatus === 'ready'" />
+        <FinanceDashboard v-if="accountStatus === 'ready'" :access-token="user.access_token" />
         <div v-else-if="accountStatus === 'error'" class="py-12">
           <h1 id="account-title" class="mb-4 text-2xl font-bold">Einrichtung pausiert.</h1>
           <p class="text-sm leading-relaxed text-error" role="alert">{{ accountError }}</p>

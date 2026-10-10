@@ -10,6 +10,15 @@ export function useAuth() {
 
   onMounted(async () => {
     const callbackUrl = new URL(window.location.href)
+    if (callbackUrl.searchParams.get('action') === 'booking') {
+      const draft = new URLSearchParams({ action: 'booking' })
+      for (const key of ['amount', 'description', 'timestamp', 'type']) {
+        const value = callbackUrl.searchParams.get(key)
+        if (value) draft.set(key, value.slice(0, key === 'description' ? 100 : 50))
+      }
+      try { window.sessionStorage.setItem('finance-shortcut-draft', JSON.stringify({ query: draft.toString(), createdAt: Date.now() })) } catch {}
+      window.history.replaceState({}, '', '/')
+    }
     const isCallback = callbackUrl.searchParams.has('state')
       && (callbackUrl.searchParams.has('code') || callbackUrl.searchParams.has('error'))
 
@@ -26,7 +35,7 @@ export function useAuth() {
         client_id: config.cognitoClientId,
         redirect_uri: `${window.location.origin}/`,
         response_type: 'code',
-        scope: 'openid email profile finanztracker/account.initialize',
+        scope: 'openid email profile finanztracker/account.initialize finanztracker/finance',
         automaticSilentRenew: false,
         loadUserInfo: false,
         stateStore: new WebStorageStateStore({ store: window.sessionStorage }),
