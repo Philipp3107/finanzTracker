@@ -7,7 +7,7 @@ frontend:
         - npm ci
     build:
       commands:
-        - npm run build
+        - NITRO_PRESET=aws_amplify npm run build
   artifacts:
     baseDirectory: .amplify-hosting
     files:
