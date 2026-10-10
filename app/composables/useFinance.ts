@@ -1,7 +1,7 @@
 export interface BudgetPlan { id: string; label: string; cents: number }
 export interface RecurringPlan extends BudgetPlan { day: number }
 export interface FinanceSettings { startDay: number; budgets: BudgetPlan[]; recurring: RecurringPlan[] }
-export interface BookingEntry { bookingId: string; label: string; cents: number; timestamp: string; budgetId?: string }
+export interface BookingEntry { bookingId: string; label: string; cents: number; timestamp: string; budgetId?: string; source?: 'manual' | 'shortcut' | 'recurring' }
 export interface FinanceState {
   version: number
   settings: FinanceSettings

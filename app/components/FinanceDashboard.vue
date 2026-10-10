@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import { Check, Eye, EyeOff, Plus, RefreshCw, Settings2, Wallet, X, Trash2 } from '@lucide/vue'
-import type { FinanceSettings } from '../composables/useFinance'
+import type { BookingEntry, FinanceSettings } from '../composables/useFinance'
+import ShortcutSettings from './ShortcutSettings.vue'
 
 const props = defineProps<{ accessToken: string }>()
 const { state, loading, saving, error, refresh, save } = useFinance(() => props.accessToken)
 const tab = ref<'overview' | 'budgets' | 'recurring' | 'settings'>('overview')
 const hidden = ref(false)
 const dialog = ref<HTMLDialogElement>()
+const deleteDialog = ref<HTMLDialogElement>()
+const deleting = ref<BookingEntry | null>(null)
 const draft = reactive({ label: '', amount: '', direction: 'expense', budgetId: '', timestamp: '' })
 const plan = ref<FinanceSettings>({ startDay: 1, budgets: [], recurring: [] })
 const planVersion = ref(0)
@@ -22,6 +25,22 @@ const inputClass = 'min-h-11 w-full min-w-0 rounded-md border border-line bg-sur
 const buttonClass = 'min-h-11 rounded-md bg-accent px-4 py-3 text-sm font-bold text-accent-ink disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent'
 
 function money(cents: number) { return hidden.value ? '\u2022\u2022\u2022\u2022' : formatter.format(cents / 100) }
+function source(booking: BookingEntry) {
+  return booking.source ?? (booking.bookingId.startsWith('RECURRING#') ? 'recurring' : 'manual')
+}
+function requestDelete(booking: BookingEntry) {
+  if (source(booking) !== 'manual') return
+  deleting.value = booking
+  deleteDialog.value?.showModal()
+}
+async function deleteBooking() {
+  if (!deleting.value || source(deleting.value) !== 'manual') return
+  if (await save(`/bookings/${encodeURIComponent(deleting.value.bookingId.replace(/^BOOKING#/, ''))}`, {}, 'DELETE')) {
+    deleteDialog.value?.close()
+    deleting.value = null
+    notice.value = 'Manuelle Buchung geloescht. Salden wurden aktualisiert.'
+  }
+}
 function cents(value: string) {
   const normalized = value.trim().replace(',', '.')
   if (!/^\d{1,7}(\.\d{1,2})?$/.test(normalized)) throw new Error('Bitte einen positiven Betrag mit maximal zwei Nachkommastellen eingeben.')
@@ -144,7 +163,7 @@ onMounted(() => {
       <section v-if="tab === 'overview'" id="panel-overview" role="tabpanel" aria-labelledby="tab-overview">
         <div class="mb-7 grid grid-cols-2 gap-4 text-xs"><div><p class="text-muted">Einnahmen</p><p class="mt-2 font-semibold text-accent">{{ money(state.incomeCents) }}</p></div><div><p class="text-muted">Ausgaben</p><p class="mt-2 font-semibold">{{ money(state.expenseCents) }}</p></div></div>
         <h2 class="mb-3 text-sm font-bold">Buchungen im Zeitraum</h2>
-        <ul v-if="state.bookings.length" class="divide-y divide-line"><li v-for="booking in state.bookings" :key="booking.bookingId" class="flex items-center gap-3 py-4"><span class="grid size-9 shrink-0 place-items-center rounded-md bg-surface text-muted"><Wallet :size="17" /></span><div class="min-w-0 flex-1"><p class="break-words text-xs font-semibold">{{ booking.label }}</p><p class="mt-1 text-[11px] text-muted">{{ dates.format(new Date(booking.timestamp)) }}<span v-if="booking.budgetId"> &middot; Budget</span></p></div><span class="shrink-0 text-xs font-semibold tabular-nums" :class="booking.cents > 0 ? 'text-accent' : ''">{{ money(booking.cents) }}</span></li></ul>
+        <ul v-if="state.bookings.length" class="divide-y divide-line"><li v-for="booking in state.bookings" :key="booking.bookingId" class="flex items-center gap-2 py-4"><span class="grid size-8 shrink-0 place-items-center rounded-md bg-surface text-muted"><Wallet :size="16" /></span><div class="min-w-0 flex-1"><p class="break-words text-xs font-semibold">{{ booking.label }}</p><p class="mt-1 text-[11px] text-muted">{{ dates.format(new Date(booking.timestamp)) }}<span v-if="booking.budgetId"> &middot; Budget</span></p><p class="mt-1 text-[10px]" :class="source(booking) === 'shortcut' ? 'text-accent' : 'text-muted'">{{ source(booking) === 'shortcut' ? 'Automatisch · Kurzbefehl' : source(booking) === 'recurring' ? 'Fixposten' : 'Manuell' }}</p></div><div class="flex shrink-0 flex-col items-end"><span class="text-xs font-semibold tabular-nums" :class="booking.cents > 0 ? 'text-accent' : ''">{{ money(booking.cents) }}</span><button v-if="source(booking) === 'manual'" type="button" :aria-label="`${booking.label} loeschen`" :title="`${booking.label} loeschen`" :disabled="saving || loading" class="grid size-11 place-items-center rounded-md text-muted hover:bg-surface hover:text-error disabled:opacity-50" @click="requestDelete(booking)"><Trash2 :size="16" /></button></div></li></ul>
         <p v-else class="py-8 text-center text-sm text-muted">Noch keine Buchungen. Erfasse deinen Startsaldo als erste Buchung.</p>
       </section>
       <section v-else-if="tab === 'budgets'" id="panel-budgets" role="tabpanel" aria-labelledby="tab-budgets">
@@ -172,6 +191,7 @@ onMounted(() => {
         </form>
         <p v-if="formError" role="alert" class="text-sm text-error">{{ formError }}</p>
         <button type="button" :class="[buttonClass, 'w-full']" :disabled="saving || loading" @click="savePlan">{{ saving ? 'Wird gespeichert...' : 'Plan speichern' }}</button>
+        <ShortcutSettings :access-token="accessToken" />
       </section>
     </template>
 
@@ -186,6 +206,13 @@ onMounted(() => {
         <p v-if="formError || error" role="alert" class="text-sm text-error">{{ formError || error }}</p>
         <button type="submit" :disabled="saving || loading || !state" :class="[buttonClass, 'w-full']">{{ saving ? 'Wird gespeichert...' : 'Buchung speichern' }}</button>
       </form>
+    </dialog>
+    <dialog ref="deleteDialog" aria-labelledby="delete-title" class="fixed inset-0 m-auto w-[calc(100%_-_32px)] max-w-[448px] rounded-lg border border-line bg-background p-5 text-foreground backdrop:bg-black/70" @cancel="saving && $event.preventDefault()">
+      <h2 id="delete-title" class="text-lg font-bold">Buchung l&ouml;schen?</h2>
+      <p class="mt-3 break-words text-sm text-muted">{{ deleting?.label }} &middot; {{ money(deleting?.cents ?? 0) }}</p>
+      <p class="mt-3 text-xs leading-relaxed text-muted">Der Betrag wird aus deinem Saldo und gegebenenfalls dem Budgetverbrauch entfernt.</p>
+      <p v-if="error" role="alert" class="mt-3 text-sm text-error">{{ error }}</p>
+      <div class="mt-6 grid grid-cols-2 gap-3"><button type="button" :disabled="saving" class="min-h-11 rounded-md border border-line text-sm disabled:opacity-50" @click="deleteDialog?.close()">Abbrechen</button><button type="button" :disabled="saving || loading" class="min-h-11 rounded-md bg-error text-sm font-bold text-background disabled:opacity-50" @click="deleteBooking">{{ saving ? 'Wird geloescht...' : 'Loeschen' }}</button></div>
     </dialog>
   </div>
 </template>
